@@ -27,10 +27,8 @@ import "github.com/Benehiko/oryproxy"
 
 func main() {
     config := oryproxy.NewDefaultConfig("https://project-slug.projects.oryapis.com")
-	proxy := oryproxy.NewOryProxy(config)
-
-	
-	proxy.ListenAndServe(ctx, 3000)
+    proxy := oryproxy.NewOryProxy(config)
+    proxy.ListenAndServe(ctx, 3000)
 }
 ```
 
@@ -46,12 +44,12 @@ import (
 
 func main() {
     config := oryproxy.NewDefaultConfig("https://project-slug.projects.oryapis.com")
-	proxy := oryproxy.NewOryProxy(config)
+    proxy := oryproxy.NewOryProxy(config)
 
     router := mux.NewRouter()
     // /.ory is the default path prefix for the proxy.
     // this can be changed.
-	router.PathPrefix("/.ory").Handler(proxy.OryProxy())
+    router.PathPrefix("/.ory").Handler(proxy.OryProxy())
 }
 ```
 
