@@ -1,7 +1,8 @@
-package orymiddlewareproxy
+package oryproxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -111,8 +112,6 @@ func NewOryProxy(conf OryConfig) *OryProxy {
 }
 
 func (p *OryProxy) OryProxy() http.Handler {
-	prefix := "/.ory"
-
 	return proxy.New(
 		func(ctx context.Context, r *http.Request) (context.Context, *proxy.HostConfig, error) {
 			u, err := url.Parse(p.config.OryProjectURL(ctx))
@@ -120,13 +119,14 @@ func (p *OryProxy) OryProxy() http.Handler {
 				return ctx, nil, err
 			}
 			upstream := u.Host
+			scheme := u.Scheme
 
 			return ctx, &proxy.HostConfig{
 				CookieDomain:          p.config.CookieDomain(ctx),
 				UpstreamHost:          upstream,
-				UpstreamScheme:        "https",
+				UpstreamScheme:        scheme,
 				TargetHost:            upstream,
-				PathPrefix:            prefix,
+				PathPrefix:            p.config.ProxyRoutePathPrefix(ctx),
 				TrustForwardedHeaders: p.config.TrustXForwardedHeaders(ctx),
 				TargetScheme:          "http",
 				CorsEnabled:           p.config.CorsEnabled(ctx),
@@ -209,10 +209,26 @@ func (p *OryProxy) ListenAndServe(ctx context.Context, port int) error {
 	r := mux.NewRouter()
 	n := negroni.New()
 
-	r.Handle(p.config.ProxyRoutePathPrefix(ctx), p.OryProxy())
+	r.PathPrefix(p.config.ProxyRoutePathPrefix(ctx)).Handler(p.OryProxy())
 
 	n.Use(negroni.NewRecovery())
 	n.UseHandler(r)
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), p.OryProxy())
+	s := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: n,
+	}
+
+	go func(ctx context.Context, s *http.Server) {
+		select {
+		case <-ctx.Done():
+			s.Shutdown(ctx)
+		}
+	}(ctx, s)
+
+	err := s.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }

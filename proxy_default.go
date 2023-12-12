@@ -1,4 +1,4 @@
-package orymiddlewareproxy
+package oryproxy
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func WithResponseLogger(logger ResponseLogger) DefaultConfigOptions {
 	}
 }
 
-func DefaultOryConfig(ctx context.Context, oryProjectURL string, opts ...DefaultConfigOptions) OryConfig {
+func NewDefaultConfig(oryProjectURL string, opts ...DefaultConfigOptions) OryConfig {
 	oci := &oryConfigDefault{
 		oryProjectURL:          oryProjectURL,
 		proxyRoutePathPrefix:   "/.ory",
@@ -95,10 +95,6 @@ func (o *oryConfigDefault) CookieDomain(ctx context.Context) string {
 
 func (o *oryConfigDefault) ProxyRoutePathPrefix(ctx context.Context) string {
 	return o.proxyRoutePathPrefix
-}
-
-func (o *oryConfigDefault) UpstreamScheme(ctx context.Context) string {
-	return "https"
 }
 
 func (o *oryConfigDefault) OryProjectURL(ctx context.Context) string {
